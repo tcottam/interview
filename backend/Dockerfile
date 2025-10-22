@@ -4,10 +4,10 @@ WORKDIR /workspace
 
 # copy pom first to leverage Docker cache for dependencies
 # (repo root context is used by the workflow, so reference the backend subdirectory)
-COPY backend/pom.xml ./
+COPY pom.xml ./
 
 # copy the backend source code
-COPY backend/ ./
+COPY src ./src
 
 # build the project (skip tests to speed up the image build in CI)
 RUN mvn -B -DskipTests package
