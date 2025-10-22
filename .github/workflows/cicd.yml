@@ -68,10 +68,17 @@ jobs:
             ${{ secrets.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:latest
           docker push ${{ secrets.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:latest
 
-      - name: Helm lint
-        uses: deliverybot/helm@v1
+      - name: Set up Helm 3
+        uses: azure/setup-helm@v3
         with:
-          args: lint deploy/chart/tekmetric-backend
+          version: '3.11.0'    # pick a stable Helm 3 version you want
+      
+      - name: Helm lint
+        run: |
+          helm repo add stable https://charts.helm.sh/stable || true
+          helm repo update
+          helm lint deploy/chart
+
 
       - name: Comment PR with built image
         if: github.event_name == 'pull_request'
