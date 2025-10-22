@@ -87,7 +87,16 @@ jobs:
         run: |
           helm repo add stable https://charts.helm.sh/stable || true
           helm repo update
-          helm lint deploy/chart
+          helm lint interview/backend/deploy/chart
+      
+      # - name: Helm upgrade or install
+      #   run: |
+      #     helm upgrade --install tekmetric-backend interview/backend/deploy/chart \
+      #       --namespace default \
+      #       --set image.repository=${REGISTRY}/${{ github.repository_owner }}/tekmetric-backend \
+      #       --set image.tag=${{ github.sha }} \
+      #       --set image.pullPolicy=Always \
+      #       --wait
 
       - name: Comment PR with built image
         if: github.event_name == 'pull_request'
