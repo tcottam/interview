@@ -41,9 +41,9 @@ readinessProbe:
 
 ingress:
   enabled: false
-  hosts:
-    - host: tekmetric.local
-      paths: [ "/" ]
+  className: ""
+  host: ""
+  annotations: {}
 
 
 hpa:
