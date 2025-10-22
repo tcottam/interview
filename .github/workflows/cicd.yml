@@ -77,7 +77,7 @@ jobs:
             ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          no-cache: true
+          no-cache: false
 
       - name: Set up Helm 3
         uses: azure/setup-helm@v3
