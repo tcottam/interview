@@ -14,6 +14,10 @@ With a ServiceMonitor, Prometheus dynamically discovers targets in Kubernetes ba
 
 ---
 
+**Installed automatically when deploying your backend via Helm**
+
+---
+
 ## ⚙️ Configuration Overview
 
 ```yaml

@@ -38,6 +38,8 @@ readinessProbe:
   periodSeconds: 10
   failureThreshold: 3
 
+serviceMonitor:
+  enabled: true
 
 ingress:
   enabled: false
