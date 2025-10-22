@@ -87,7 +87,7 @@ jobs:
         run: |
           helm repo add stable https://charts.helm.sh/stable || true
           helm repo update
-          helm lint interview/backend/deploy/chart
+          helm lint backend/deploy/chart
       
       # - name: Helm upgrade or install
       #   run: |
