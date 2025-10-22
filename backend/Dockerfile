@@ -3,13 +3,13 @@ FROM maven:3.9.11-eclipse-temurin-21 AS builder
 WORKDIR /workspace
 
 # copy pom first to leverage Docker cache for dependencies
-COPY pom.xml ./
+# (repo root context is used by the workflow, so reference the backend subdirectory)
+COPY backend/pom.xml ./
 
-# copy the whole project
-COPY . .
+# copy the backend source code
+COPY backend/ ./
 
 # build the project (skip tests to speed up the image build in CI)
-# run on your host (requires Java 21 installed)
 RUN mvn -B -DskipTests package
 
 # Stage 2: runtime image
