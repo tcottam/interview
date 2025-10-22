@@ -131,10 +131,34 @@ minikube service tekmetric-backend
 
 ---
 
+## CRUD API endpoints (examples)
+```bash
+# list
+curl http://localhost:8080/api/customers
+
+# get
+curl http://localhost:8080/api/customers/1
+
+# create
+curl -X POST -H "Content-Type: application/json" -d '{"name":"Eve","email":"eve@example.com"}' http://localhost:8080/api/customers
+
+# update
+curl -X PUT -H "Content-Type: application/json" -d '{"name":"Eve Updated","email":"eve2@example.com"}' http://localhost:8080/api/customers/3
+
+# delete
+curl -X DELETE http://localhost:8080/api/customers/3
+```
+---
+
 ## 🧩 Actuator & Metrics
 
-* `/actuator/health`
-* `/actuator/prometheus`
+* Health (overall): `GET /actuator/health`
+* Liveness: `GET /actuator/health/liveness`
+* Readiness: `GET /actuator/health/readiness`
+* Prometheus metrics: `GET /actuator/prometheus`
+* Generic metrics list: `GET /actuator/metrics`
+* Specific metric: `GET /actuator/metrics/{metric.name} (e.g. jvm.memory.used)`
+* Info: `GET /actuator/info`
 
 Prometheus metrics and readiness/liveness groups are explicitly configured.
 
