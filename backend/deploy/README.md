@@ -159,7 +159,7 @@ Prometheus metrics and readiness/liveness groups are explicitly configured.
 
 ---
 
-# ServiceMonitor Verification
+## ServiceMonitor Verification
 
 This section verifies that Prometheus is scraping metrics successfully from the Tekmetric backend.
 
@@ -167,7 +167,7 @@ This section verifies that Prometheus is scraping metrics successfully from the 
 >
 > * Prometheus Operator is installed in the `monitoring` namespace.
 
-## 1. Confirm the ServiceMonitor Exists
+### 1. Confirm the ServiceMonitor Exists
 
 ```bash
 kubectl get servicemonitors -A
@@ -179,7 +179,7 @@ If missing:
 kubectl apply -f deploy/monitoring/servicemonitor.yaml
 ```
 
-## 2. Inspect the ServiceMonitor
+### 2. Inspect the ServiceMonitor
 
 ```bash
 kubectl describe servicemonitor tekmetric-backend-monitor
@@ -190,7 +190,7 @@ Ensure:
 * Endpoint path `/actuator/prometheus`
 * Port `http`
 
-## 3. Verify the Target Service
+### 3. Verify the Target Service
 
 ```bash
 kubectl get svc tekmetric-backend-tekmetric-backend -o yaml
@@ -204,7 +204,7 @@ ports:
     port: 8080
 ```
 
-## 4. Check Prometheus Targets
+### 4. Check Prometheus Targets
 
 Forward Prometheus UI:
 
@@ -221,7 +221,7 @@ tekmetric-backend-monitor /actuator/prometheus
 State: UP
 ```
 
-## 5. Verify Metrics in Prometheus
+### 5. Verify Metrics in Prometheus
 
 Query in UI or via curl:
 
@@ -231,7 +231,7 @@ curl 'http://localhost:9090/api/v1/query?query=http_server_requests_seconds_coun
 
 You should see metric samples returned in JSON format.
 
-## 6. Troubleshooting
+### 6. Troubleshooting
 
 * **ServiceMonitor missing** → Reapply YAML.
 * **Label mismatch** → Ensure `app: tekmetric-backend` matches selector.
