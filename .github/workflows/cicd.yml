@@ -14,20 +14,23 @@ permissions:
 env:
   BACKEND_DIR: backend
   IMAGE_NAME: tekmetric-backend
+  JAVA_VERSION: 21
+  REGISTRY: ghcr.io
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
-      - name: Set up JDK 21
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: ${{ env.JAVA_VERSION }}
 
       - name: Cache Maven packages
         uses: actions/cache@v4
@@ -45,40 +48,46 @@ jobs:
         run: mvn test
         working-directory: ${{ env.BACKEND_DIR }}
 
-      - name: Login to Docker Registry
+      # buildx setup for caching layers
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      # login to GHCR using GITHUB_TOKEN (works for same-repo pushes)
+      - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
-          registry: ${{ secrets.DOCKER_REGISTRY }}
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push Docker image
+      # Build and push only on push events (not PRs)
+      - name: Build and push Docker image to GHCR
+        if: github.event_name == 'push'
         uses: docker/build-push-action@v5
         with:
           context: ./backend
           file: ./backend/Dockerfile
           push: true
           platforms: linux/amd64
-          tags: ${{ secrets.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-
-      - name: Push 'latest' tag
-        if: success()
-        run: |
-          docker tag ${{ secrets.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \
-            ${{ secrets.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-          docker push ${{ secrets.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          tags: |
+            ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Set up Helm 3
         uses: azure/setup-helm@v3
         with:
-          version: '3.11.0'    # pick a stable Helm 3 version you want
-      
+          version: '3.11.0'
+
       - name: Helm lint
         run: |
           helm repo add stable https://charts.helm.sh/stable || true
           helm repo update
-          helm lint deploy/chart
-
+          helm lint deploy/chart/tekmetric-backend
 
       - name: Comment PR with built image
         if: github.event_name == 'pull_request'
@@ -90,5 +99,5 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `Built image: ${{ secrets.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}`
+              body: `Built image: ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ github.sha }}`
             })
