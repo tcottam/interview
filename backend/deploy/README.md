@@ -1,109 +1,167 @@
-# Tekmetric Backend - Deployment Guide
+# Tekmetric Backend
 
-This guide explains how to build, containerize, and deploy the Tekmetric backend Spring Boot application to Kubernetes using the provided Helm chart.
-
-## Contents
-- Dockerfile
-- Helm chart: `deploy/chart/tekmetric-backend`
-- Example `data.sql` seed file location: `src/main/resources/data.sql`
-
-## Prerequisites
-- Java 21 and Maven (for local build)
-- Docker
-- kubectl
-- Helm (v3+)
-- kind or minikube (for local cluster testing)
-
-## Local build & run (dev)
-```bash
-# build
-cd backend
-mvn package
-
-# run
-java -jar target/interview-1.0-SNAPSHOT.jar
-
-# verify
-curl http://localhost:8080/api/welcome
-```
-
-## Build Docker image
-```bash
-# from repo root where Dockerfile is located (backend/)
-docker build -t tekmetric-backend:local .
-
-docker run --rm -p 8080:8080 tekmetric-backend:local
-# verify
-curl http://localhost:8080/api/welcome
-```
-
-## Deploy to a local cluster (kind)
-```bash
-# create cluster
-kind create cluster --name tekmetric
-
-# load local image into kind
-kind load docker-image tekmetric-backend:local --name tekmetric
-
-# install helm chart
-helm install tekmetric-backend deploy/chart/tekmetric-backend
-
-# check pods
-kubectl get pods
-
-# port-forward service for testing
-kubectl port-forward svc/tekmetric-backend 8080:8080
-curl http://localhost:8080/api/customers
-```
-
-## Deploy to minikube
-```bash
-minikube start
-# build image inside minikube docker daemon
-eval $(minikube docker-env)
-docker build -t tekmetric-backend:local .
-
-helm install tekmetric-backend deploy/chart/tekmetric-backend
-minikube service tekmetric-backend --url
-```
-
-## Observability (Prometheus)
-1. Install the kube-prometheus-stack chart (Prometheus & Grafana):
-```bash
-helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-helm repo update
-helm install prometheus prometheus-community/kube-prometheus-stack
-```
-2. Create a ServiceMonitor to scrape the Spring Boot `/actuator/prometheus` endpoint (if using Prometheus Operator). See README in repo for example ServiceMonitor YAML.
-
-## CRUD API endpoints (examples)
-```bash
-# list
-curl http://localhost:8080/api/customers
-
-# get
-curl http://localhost:8080/api/customers/1
-
-# create
-curl -X POST -H "Content-Type: application/json" -d '{"name":"Eve","email":"eve@example.com"}' http://localhost:8080/api/customers
-
-# update
-curl -X PUT -H "Content-Type: application/json" -d '{"name":"Eve Updated","email":"eve2@example.com"}' http://localhost:8080/api/customers/3
-
-# delete
-curl -X DELETE http://localhost:8080/api/customers/3
-```
-
-## Notes & Best Practices
-- The Helm chart values use `tekmetric-backend:latest` by default. For production, push to a registry and pin an immutable tag (or SHA).
-- Ensure `management.endpoints.web.exposure.include` includes `prometheus` and `health` endpoints in `application.properties`.
-- Use resource requests/limits and non-root image.
-- Protect actuator endpoints in production (network policies, auth)
-
-## PR Checklist
-- Dockerfile included and tested
-- Helm chart included under `deploy/chart/tekmetric-backend`
-- `src/main/resources/data.sql` added with seed data
-- README updated with build & deploy steps
+A Spring Boot backend service built with Maven, containerized with Docker, and deployed via Helm on Kubernetes. The project supports both local development and CI/CD pipelines using GitHub Actions and GHCR.
 
 ---
+
+## 📁 Project Structure
+
+```
+interview/
+├── backend/
+│   ├── src/                     # Java source code
+│   ├── pom.xml                  # Maven configuration
+│   ├── Dockerfile               # Multi-stage Docker build
+│   ├── deploy/
+│   │   └── chart/               # Helm chart for deployment
+│   │       ├── Chart.yaml
+│   │       ├── values.yaml
+│   │       └── templates/
+│   └── application.properties   # Spring Boot configuration
+└── .github/workflows/cicd.yml   # CI/CD pipeline
+```
+
+---
+
+## 🧱 Local Development
+
+### Prerequisites
+
+* Java 21 (Temurin)
+* Maven 3.9+
+* Docker
+* Helm 3.11+
+* Minikube (optional, for local K8s deploy)
+
+### Run Locally
+
+```bash
+cd backend
+mvn spring-boot:run
+```
+
+Access the app at: [http://localhost:8080](http://localhost:8080)
+
+#### H2 Console
+
+To access the in-memory database:
+
+```
+URL: http://localhost:8080/h2-console
+JDBC URL: jdbc:h2:mem:testdb
+Username: sa
+Password: (leave blank or use configured value)
+```
+
+> Note: For development only. `webAllowOthers=true` is enabled via Docker for remote access within cluster.
+
+---
+
+## 🐳 Docker
+
+### Build locally
+
+```bash
+cd backend
+docker build -t tekmetric-backend:latest .
+```
+
+### Run locally
+
+```bash
+docker run -p 8080:8080 tekmetric-backend:latest
+```
+
+---
+
+## ⚙️ CI/CD (GitHub Actions)
+
+The CI/CD workflow builds, tests, lints Helm charts, and publishes a Docker image to GHCR.
+
+```yaml
+context: ./backend
+file: ./backend/Dockerfile
+push: true
+platforms: linux/amd64,linux/arm64
+tags:
+  ghcr.io/<OWNER>/tekmetric-backend:<SHA>
+  ghcr.io/<OWNER>/tekmetric-backend:latest
+```
+
+Secrets used:
+
+* `GHCR_PAT`: Personal Access Token with `write:packages`
+
+---
+
+## ☸️ Helm Deployment (Minikube)
+
+### Start Minikube
+
+```bash
+minikube start --driver=docker
+```
+
+### Load image from GHCR
+
+```bash
+docker login ghcr.io -u <your-username> -p <your-ghcr-pat>
+```
+
+### Deploy with Helm
+
+```bash
+helm upgrade --install tekmetric-backend backend/deploy/chart \
+  --set image.repository=ghcr.io/<your-username>/tekmetric-backend \
+  --set image.tag=latest
+```
+
+### Check deployment
+
+```bash
+kubectl get pods
+kubectl get svc
+```
+
+Access via:
+
+```bash
+minikube service tekmetric-backend
+```
+
+---
+
+## 🧩 Actuator & Metrics
+
+* `/actuator/health`
+* `/actuator/prometheus`
+
+Prometheus metrics and readiness/liveness groups are explicitly configured.
+
+---
+
+## 🔍 Troubleshooting
+
+**Issue:** `COPY pom.xml not found`
+
+> Ensure Docker build context is `./backend` and the Dockerfile is referenced as `./backend/Dockerfile`.
+
+**Issue:** `Helm lint path error`
+
+> Always use relative path `backend/deploy/chart` from repo root in workflows.
+
+**Issue:** Architecture mismatch on M1 Mac
+
+> Build a multi-platform image:
+
+```bash
+docker buildx build --platform linux/amd64,linux/arm64 -t ghcr.io/<user>/tekmetric-backend:latest .
+```
+
+---
+
+## 🧭 Next Steps
+
+* Add `values-ci.yaml` for CI-specific overrides.
+* Automate Minikube deployment using a helper script.
+* Configure ingress or service exposure for production environments.
