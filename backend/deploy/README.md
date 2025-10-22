@@ -134,7 +134,7 @@ minikube service tekmetric-backend
 ## CRUD API endpoints (examples)
 The service exposes standard CRUD endpoints for managing Customers at the base path `/api/customers`.
 | Operation | Method | Path | Example |
-| :--- | :---: | :---: | ---: |
+| :--- | :---: | :---: | :--- |
 | List All | GET | /api/customers | `curl http://localhost:8080/api/customers` |
 | Get By ID | GET | /api/customers/{id} | `curl http://localhost:8080/api/customers/1` |
 | Create New | POST | /api/customers | `curl -X POST -H "Content-Type: application/json" -d '{"name":"Eve","email":"eve@example.com"}' http://localhost:8080/api/customers` |
@@ -146,7 +146,7 @@ The service exposes standard CRUD endpoints for managing Customers at the base p
 ## 🧩 Actuator & Metrics
 
 | Purpose | Path | Example |
-| :--- | :---: | ---: |
+| :--- | :---: | :--- |
 | Health (overall) | /actuator/health | `curl -sS http://localhost:8080/actuator/health`
 | Liveness | /health/liveness | `curl -sS http://localhost:8080/actuator/health/liveness`
 | Readiness | /health/readiness | `curl -sS http://localhost:8080/actuator/health/readiness`
